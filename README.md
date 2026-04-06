@@ -2,7 +2,7 @@
 
 > ⚠️ This project was vibecoded with the help of AI assistants. Expect rough edges.
 
-**GOAM** is a Windows desktop app that lets you play custom music through your microphone in CS:GO (Legacy, AppID 4465480), as a modern replacement for [SLAM](https://github.com/raphaelmacsabpf/slam).
+**GOAM** is a Windows desktop app that lets you play custom music through your microphone in CS:GO (Legacy, AppID 4465480), as a modern replacement for [SLAM](https://github.com/SilentSys/SLAM).
 
 Download songs from YouTube or import local files (MP3, WAV, FLAC, OGG), and play them in-game with a single key press.
 
@@ -59,7 +59,7 @@ The output will be at `dist/GOAM.exe`.
 
 ## Credits
 
-- [SLAM](https://github.com/raphaelmacsabpf/slam) — the original inspiration for this project
+- [SLAM](https://github.com/SilentSys/SLAM) — the original inspiration for this project
 - [ChatGPT](https://chat.openai.com) — vibe coding assistance
 - [Grok](https://grok.x.ai) — vibe coding assistance
 - [Claude](https://claude.ai) — vibe coding assistance
