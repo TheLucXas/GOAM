@@ -1,0 +1,55 @@
+name: Bug report
+description: Something does not work as expected
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please fill in the diagnostic report: it contains the information needed to
+        reproduce most problems and has user names and paths removed. For security problems, do **not** use
+        this form; see SECURITY.md.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: false
+  - type: textarea
+    id: report
+    attributes:
+      label: Diagnostic report
+      description: In GOAM open **Options -> Copy report** (or the *Copy report* button at the bottom right) and paste the result here.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - YouTube download
+        - Import / conversion
+        - In-game (no sound, relay, song switching)
+        - User interface
+        - Start with Windows / tray
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I am using the latest release (or the latest build of `develop`).
+        - label: I searched existing issues.

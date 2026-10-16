@@ -1,0 +1,33 @@
+name: Translation
+description: Add a language or fix a translation
+title: "[Translation] "
+labels: [translation]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        GOAM ships Spanish and English. To add a language, copy the English table from
+        `src/GOAM.Core/Localization/Localizer.cs`, translate the values and paste it below (keep the
+        `{0}` placeholders and `\n`). Keys starting with `cfg_` must stay plain ASCII.
+  - type: input
+    id: language
+    attributes:
+      label: Language
+      placeholder: "e.g. Portuguese (pt)"
+    validations:
+      required: true
+  - type: textarea
+    id: translation
+    attributes:
+      label: Translation or correction
+      description: The full table, or the keys you want changed.
+      render: text
+    validations:
+      required: true
+  - type: checkboxes
+    id: license
+    attributes:
+      label: Licence
+      options:
+        - label: I agree that my translation is released under The Unlicense, like the rest of the project.
+          required: true
