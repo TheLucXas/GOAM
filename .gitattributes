@@ -1,0 +1,20 @@
+# Normalise line endings: everything text is LF in the repo.
+* text=auto eol=lf
+
+# Windows scripts must stay CRLF
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.sln text eol=crlf
+*.ps1 text eol=lf
+
+# Binary assets
+*.ico binary
+*.png binary
+*.jpg binary
+*.gif binary
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.flac binary
+*.exe binary
+*.dll binary
