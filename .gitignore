@@ -30,7 +30,7 @@ build/
 dist/
 *.spec
 upx.exe
-Songs/
+/Songs/
 
 # --- OS ---
 Thumbs.db
