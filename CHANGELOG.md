@@ -6,7 +6,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
-## [2.0.0] - Unreleased
+## [2.0.0] - 2026-10-15
 
 Complete rewrite in C# / .NET 8. The last Python release stays available at the
 `v1.x-python-final` tag.
