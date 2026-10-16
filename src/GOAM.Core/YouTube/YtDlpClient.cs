@@ -51,6 +51,7 @@ public sealed class YtDlpClient
     private readonly AppPaths _paths;
     private readonly IAppLog _log;
     private bool _updatedThisSession;
+    private TimeSpan _retryPause = TimeSpan.FromSeconds(2);
 
     public YtDlpClient(YtDlpManager manager, AppPaths paths, IAppLog? log = null)
     {
@@ -197,10 +198,87 @@ public sealed class YtDlpClient
         return code == 0 ? version : null;
     }
 
-    public async Task<ProbeResult> ProbeAsync(
-        string url, bool fullPlaylist, IProgress<double>? installProgress, CancellationToken ct)
+    public Task<ProbeResult> ProbeAsync(
+        string url, bool fullPlaylist, IProgress<double>? installProgress, CancellationToken ct) =>
+        RunWithRecoveryAsync(exe => RunProbeAsync(exe, url, fullPlaylist, ct), installProgress, ct);
+
+    /// <summary>Downloads the audio of one video into GOAM's private downloads folder.</summary>
+    public Task<DownloadedAudio> DownloadAsync(
+        string url, IProgress<DownloadProgress>? progress, IProgress<double>? installProgress, CancellationToken ct) =>
+        RunWithRecoveryAsync(exe => RunDownloadAsync(exe, url, progress, ct), installProgress, ct);
+
+    /// <summary>Phrases yt-dlp prints when the failure was the network, not the video.</summary>
+    internal static bool IsTransientNetworkError(string details)
+    {
+        string[] markers =
+        {
+            "WinError 10013", "WinError 10060", "WinError 10054", "WinError 10053", "getaddrinfo failed",
+            "timed out", "Connection reset", "Failed to establish a new connection",
+            "Temporary failure in name resolution", "Remote end closed connection", "HTTP Error 5",
+        };
+        return markers.Any(m => details.Contains(m, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Runs one yt-dlp operation with the recovery GOAM promises: a transient network failure is retried
+    /// once, and if it still fails yt-dlp itself is refreshed (once per session) and the operation retried,
+    /// because YouTube changes break old yt-dlp builds every few weeks.
+    /// </summary>
+    private async Task<T> RunWithRecoveryAsync<T>(
+        Func<string, Task<T>> attempt, IProgress<double>? installProgress, CancellationToken ct)
     {
         string exe = await _manager.EnsureReadyAsync(installProgress, ct).ConfigureAwait(false);
+
+        YtDlpException failure;
+        try
+        {
+            return await attempt(exe).ConfigureAwait(false);
+        }
+        catch (YtDlpException ex)
+        {
+            failure = ex;
+        }
+
+        if (IsTransientNetworkError(failure.Details))
+        {
+            _log.Warn($"yt-dlp hit a network error (exit {failure.ExitCode}); retrying once.");
+            await Task.Delay(_retryPause, ct).ConfigureAwait(false);
+            try
+            {
+                return await attempt(exe).ConfigureAwait(false);
+            }
+            catch (YtDlpException ex)
+            {
+                failure = ex;
+            }
+        }
+
+        if (!_updatedThisSession)
+        {
+            _updatedThisSession = true;
+            _log.Warn($"yt-dlp failed (exit {failure.ExitCode}); checking for a newer yt-dlp before giving up.");
+            bool updated = false;
+            try
+            {
+                updated = await _manager.UpdateIfNewerAsync(installProgress, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidDataException
+                                           or TaskCanceledException && !ct.IsCancellationRequested)
+            {
+                _log.Warn($"Could not update yt-dlp: {ex.Message}");
+            }
+
+            if (updated)
+            {
+                return await attempt(exe).ConfigureAwait(false);
+            }
+        }
+
+        throw failure;
+    }
+
+    private async Task<ProbeResult> RunProbeAsync(string exe, string url, bool fullPlaylist, CancellationToken ct)
+    {
         var stdout = new System.Text.StringBuilder();
         var stderr = new System.Text.StringBuilder();
 
@@ -216,44 +294,6 @@ public sealed class YtDlpClient
 
         return ParseProbeJson(stdout.ToString());
     }
-
-    /// <summary>
-    /// Downloads the audio of one video into GOAM's private downloads folder. If yt-dlp fails it is updated
-    /// once (YouTube changes constantly) and the download is retried.
-    /// </summary>
-    public async Task<DownloadedAudio> DownloadAsync(
-        string url, IProgress<DownloadProgress>? progress, IProgress<double>? installProgress, CancellationToken ct)
-    {
-        string exe = await _manager.EnsureReadyAsync(installProgress, ct).ConfigureAwait(false);
-        try
-        {
-            return await RunDownloadAsync(exe, url, progress, ct).ConfigureAwait(false);
-        }
-        catch (YtDlpException ex) when (!_updatedThisSession)
-        {
-            _updatedThisSession = true;
-            _log.Warn($"yt-dlp failed (exit {ex.ExitCode}); checking for a newer yt-dlp before retrying.");
-            bool updated;
-            try
-            {
-                updated = await _manager.UpdateIfNewerAsync(installProgress, ct).ConfigureAwait(false);
-            }
-            catch (Exception updateEx) when (updateEx is HttpRequestException or IOException or InvalidDataException
-                                                 or TaskCanceledException)
-            {
-                _log.Warn($"Could not update yt-dlp: {updateEx.Message}");
-                throw ex;
-            }
-
-            if (!updated)
-            {
-                throw;
-            }
-
-            return await RunDownloadAsync(exe, url, progress, ct).ConfigureAwait(false);
-        }
-    }
-
     private async Task<DownloadedAudio> RunDownloadAsync(
         string exe, string url, IProgress<DownloadProgress>? progress, CancellationToken ct)
     {

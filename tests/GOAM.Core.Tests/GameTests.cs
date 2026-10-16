@@ -130,6 +130,18 @@ public class SteamLocatorTests
     }
 
     [Fact]
+    public void LibraryFoldersAreExtractedFromTheVdf()
+    {
+        string vdf = "\"libraryfolders\"\n{\n\t\"0\"\n\t{\n\t\t\"path\"\t\t\"X:\\\\Steam\"\n\t\t\"label\"\t\t\"\"\n"
+                     + "\t\t\"apps\"\n\t\t{\n\t\t\t\"730\"\t\t\"123\"\n\t\t}\n\t}\n"
+                     + "\t\"1\"\n\t{\n\t\t\"path\"\t\t\"Y:\\\\Games\\\\SteamLibrary\"\n\t}\n}\n";
+
+        Assert.Equal(
+            new[] { @"X:\Steam", @"Y:\Games\SteamLibrary" },
+            SteamLocator.ParseLibraryFolders(vdf).ToArray());
+    }
+
+    [Fact]
     public void NoUserdataMeansNoRelayPath()
     {
         using var dir = new TempDir();

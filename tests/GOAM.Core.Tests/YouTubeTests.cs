@@ -152,6 +152,18 @@ public class YtDlpClientTests
         Assert.Equal(fraction, f);
     }
 
+    [Theory]
+    [InlineData("ERROR: [youtube] x: Unable to download API page: [WinError 10013] Intento de acceso a un socket", true)]
+    [InlineData("ERROR: Unable to download webpage: <urlopen error [Errno 11001] getaddrinfo failed>", true)]
+    [InlineData("ERROR: The read operation timed out", true)]
+    [InlineData("ERROR: [youtube] x: Video unavailable. This video is private", false)]
+    [InlineData("ERROR: Requested format is not available", false)]
+    [InlineData("", false)]
+    public void RecognisesTransientNetworkErrors(string details, bool transient)
+    {
+        Assert.Equal(transient, YtDlpClient.IsTransientNetworkError(details));
+    }
+
     [Fact]
     public void ResultLineKeepsTabsInsideTheTitle()
     {
@@ -173,9 +185,18 @@ public class YtDlpManagerTests
         public byte[] Exe = FakeExe;
         public string Sums = string.Empty;
         public int ExeRequests;
+        public int FailuresRemaining;
+        public int TotalRequests;
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
+            TotalRequests++;
+            if (FailuresRemaining > 0)
+            {
+                FailuresRemaining--;
+                throw new HttpRequestException("simulated connection refusal");
+            }
+
             string url = request.RequestUri!.ToString();
             if (url.EndsWith("SHA2-256SUMS", StringComparison.Ordinal))
             {
@@ -279,6 +300,34 @@ public class YtDlpManagerTests
         Assert.True(await manager.UpdateIfNewerAsync(null, CancellationToken.None));
         Assert.Equal(newer, File.ReadAllBytes(paths.YtDlpExe));
         Assert.Equal(Sha(newer), File.ReadAllText(paths.YtDlpHashFile));
+    }
+
+    [Fact]
+    public async Task TransientConnectionFailuresAreRetried()
+    {
+        using var dir = new TempDir();
+        var (manager, paths, http) = Create(dir);
+        manager.SetRetryDelay(TimeSpan.FromMilliseconds(10));
+        http.FailuresRemaining = 2; // the first two connections are refused
+
+        await manager.EnsureReadyAsync(null, CancellationToken.None);
+
+        Assert.True(File.Exists(paths.YtDlpExe));
+        Assert.True(http.TotalRequests >= 4); // 2 refused + sums + exe
+    }
+
+    [Fact]
+    public async Task PersistentConnectionFailureEventuallyGivesUp()
+    {
+        using var dir = new TempDir();
+        var (manager, paths, http) = Create(dir);
+        manager.SetRetryDelay(TimeSpan.FromMilliseconds(10));
+        http.FailuresRemaining = 100;
+
+        await Assert.ThrowsAsync<HttpRequestException>(
+            () => manager.EnsureReadyAsync(null, CancellationToken.None));
+        Assert.Equal(3, http.TotalRequests);
+        Assert.False(File.Exists(paths.YtDlpExe));
     }
 
     [Fact]

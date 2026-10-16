@@ -160,9 +160,10 @@ public sealed class YtDlpManager
 
         try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, _baseUrl + ExeAssetName);
-            using HttpResponseMessage response = await _http
-                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+            string exeUrl = _baseUrl + ExeAssetName;
+            using HttpResponseMessage response = await SendWithRetryAsync(
+                () => new HttpRequestMessage(HttpMethod.Get, exeUrl), HttpCompletionOption.ResponseHeadersRead, ct)
+                .ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
             long? total = response.Content.Headers.ContentLength;
@@ -230,11 +231,51 @@ public sealed class YtDlpManager
 
     private async Task<string> GetStringAsync(string url, CancellationToken ct)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        using HttpResponseMessage response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+        using HttpResponseMessage response = await SendWithRetryAsync(
+            () => new HttpRequestMessage(HttpMethod.Get, url), HttpCompletionOption.ResponseContentRead, ct)
+            .ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// Sends a request, retrying transient connection failures (a freshly started program is sometimes
+    /// refused by local firewalls for the first second, and GitHub/CDN edges hiccup). Cancellation is never retried.
+    /// </summary>
+    private async Task<HttpResponseMessage> SendWithRetryAsync(
+        Func<HttpRequestMessage> requestFactory, HttpCompletionOption option, CancellationToken ct)
+    {
+        const int attempts = 3;
+        for (int attempt = 1; ; attempt++)
+        {
+            ct.ThrowIfCancellationRequested();
+            using HttpRequestMessage request = requestFactory();
+            try
+            {
+                HttpResponseMessage response = await _http.SendAsync(request, option, ct).ConfigureAwait(false);
+                if ((int)response.StatusCode >= 500 && attempt < attempts)
+                {
+                    response.Dispose();
+                    await Task.Delay(RetryDelay(attempt), ct).ConfigureAwait(false);
+                    continue;
+                }
+
+                return response;
+            }
+            catch (HttpRequestException ex) when (attempt < attempts)
+            {
+                _log.Warn($"Network request failed (attempt {attempt}/{attempts}): {ex.Message}");
+                await Task.Delay(RetryDelay(attempt), ct).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private TimeSpan RetryDelay(int attempt) => _retryDelayOverride ?? TimeSpan.FromSeconds(attempt);
+
+    private TimeSpan? _retryDelayOverride;
+
+    /// <summary>Test hook: shrink the pause between retries.</summary>
+    internal void SetRetryDelay(TimeSpan delay) => _retryDelayOverride = delay;
 
     private static bool IsHex64(string s) =>
         s.Length == 64 && s.All(c => c is >= '0' and <= '9' or >= 'a' and <= 'f' or >= 'A' and <= 'F');
