@@ -245,7 +245,7 @@ public sealed class YtDlpManager
     private async Task<HttpResponseMessage> SendWithRetryAsync(
         Func<HttpRequestMessage> requestFactory, HttpCompletionOption option, CancellationToken ct)
     {
-        const int attempts = 3;
+        const int attempts = 4;
         for (int attempt = 1; ; attempt++)
         {
             ct.ThrowIfCancellationRequested();

@@ -326,7 +326,7 @@ public class YtDlpManagerTests
 
         await Assert.ThrowsAsync<HttpRequestException>(
             () => manager.EnsureReadyAsync(null, CancellationToken.None));
-        Assert.Equal(3, http.TotalRequests);
+        Assert.Equal(4, http.TotalRequests);
         Assert.False(File.Exists(paths.YtDlpExe));
     }
 

@@ -57,6 +57,9 @@ internal static class Theme
 
     public static void Style(Form form)
     {
+        // Layouts are positioned in 96-dpi pixels; let WinForms scale them to the monitor (PerMonitorV2).
+        form.AutoScaleDimensions = new SizeF(96F, 96F);
+        form.AutoScaleMode = AutoScaleMode.Dpi;
         form.BackColor = Window;
         form.ForeColor = Text;
         form.Font = Ui();
