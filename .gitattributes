@@ -18,3 +18,6 @@
 *.flac binary
 *.exe binary
 *.dll binary
+
+# golden files must keep the exact bytes (CRLF) that GOAM 1.x wrote
+tests/assets/golden/* binary
