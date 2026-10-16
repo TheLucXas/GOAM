@@ -20,7 +20,7 @@ GOAM 2 is a Windows-only C# / .NET 8 application split into a UI-free core and a
 
 | | WinForms | WPF |
 |---|---|---|
-| Cold start | measured: ~0.2 s to a visible window (self-contained, ReadyToRun; see `PERFORMANCE.md`) | not measured here; loads the XAML/composition stack, which is heavier by design |
+| Cold start | measured: 0.2-0.35 s to a visible window (self-contained; see `PERFORMANCE.md`) | not measured here; loads the XAML/composition stack, which is heavier by design |
 | Virtualised list | `DataGridView` in virtual mode, native | `ListView` + virtualisation |
 | Look | classic controls, custom-painted dark theme | richer styling |
 
@@ -127,7 +127,9 @@ the user name, machine name and profile paths. Nothing leaves the machine.
 
 ## Packaging
 
-Single-file, self-contained, ReadyToRun, compressed; chosen from measurements in `docs/PERFORMANCE.md`.
+Single-file, self-contained, compressed (`PublishSingleFile` + `EnableCompressionInSingleFile`), chosen from
+the measurements in `docs/PERFORMANCE.md`: ReadyToRun gave no start-up gain (the framework itself ships
+precompiled) and made the bundle larger; trimming is not supported for Windows Forms in .NET 8.
 UPX is not used. Releases are built by `.github/workflows/release.yml` on `v*` tags.
 
 ## Command-line helpers (for development)

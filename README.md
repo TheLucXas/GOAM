@@ -130,7 +130,7 @@ Requires the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) on W
 dotnet build GOAM.sln -c Release
 dotnet test  tests/GOAM.Core.Tests -c Release
 dotnet publish src/GOAM.App -c Release -r win-x64 --self-contained true `
-  -p:PublishSingleFile=true -p:PublishReadyToRun=true -o out
+  -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -o out
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and
