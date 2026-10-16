@@ -1,17 +1,38 @@
-GOAM.spec
+# --- .NET build output ---
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Pp]ublish/
+artifacts/
+*.user
+*.suo
+*.userprefs
+.vs/
+.vscode/
+.idea/
+*.log
+TestResults/
+*.trx
+*.nupkg
+*.snupkg
+BenchmarkDotNet.Artifacts/
+
+# --- Local, per-machine files ---
+launchSettings.json.user
+*.local.json
+
+# --- Python leftovers (legacy v1.x lives at tag v1.x-python-final) ---
+__pycache__/
+*.pyc
+.venv/
+venv/
+build/
+dist/
+*.spec
 upx.exe
-build/GOAM/Analysis-00.toc
-build/GOAM/base_library.zip
-build/GOAM/EXE-00.toc
-build/GOAM/GOAM.pkg
-build/GOAM/PKG-00.toc
-build/GOAM/PYZ-00.pyz
-build/GOAM/PYZ-00.toc
-build/GOAM/warn-GOAM.txt
-build/GOAM/xref-GOAM.html
-build/GOAM/localpycs/pyimod01_archive.pyc
-build/GOAM/localpycs/pyimod02_importers.pyc
-build/GOAM/localpycs/pyimod03_ctypes.pyc
-build/GOAM/localpycs/pyimod04_pywin32.pyc
-build/GOAM/localpycs/struct.pyc
-dist/GOAM.exe
+Songs/
+
+# --- OS ---
+Thumbs.db
+Desktop.ini
+.DS_Store

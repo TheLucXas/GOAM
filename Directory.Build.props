@@ -1,0 +1,29 @@
+<Project>
+
+  <!-- Single source of truth for the version. Bump here (and CHANGELOG.md) for every release. -->
+  <PropertyGroup>
+    <Version>2.0.0</Version>
+    <Authors>TheLucXas</Authors>
+    <Product>GOAM</Product>
+    <Description>GOAM - Global Offensive Audio Mixer. Plays music through the microphone in CS:GO (Legacy).</Description>
+    <Copyright>Public domain (The Unlicense)</Copyright>
+    <RepositoryUrl>https://github.com/TheLucXas/GOAM</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>Unlicense</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <Deterministic>true</Deterministic>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Warnings are errors on CI (GitHub Actions sets CI=true) so they never accumulate silently. -->
+    <TreatWarningsAsErrors Condition="'$(CI)' == 'true'">true</TreatWarningsAsErrors>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+</Project>
