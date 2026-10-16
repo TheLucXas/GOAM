@@ -1,7 +1,7 @@
 # Measures the C# build variants: size, time to visible window, idle memory, list refresh, MP3 conversion.
 # Run from an env.ps1-initialised shell. Output goes to bench\results\cs_*.
 param(
-    [string[]]$Variants = @('fdd', 'sc', 'sc-r2r', 'sc-r2r-comp'),
+    [string[]]$Variants = @('fdd', 'sc', 'sc-comp', 'sc-r2r', 'sc-r2r-comp'),
     [int]$Runs = 5,
     [switch]$SkipPublish
 )
@@ -18,6 +18,7 @@ New-Item -ItemType Directory -Force -Path $res | Out-Null
 $props = @{
     'fdd'         = @('--self-contained', 'false', '-p:PublishSingleFile=true')
     'sc'          = @('--self-contained', 'true', '-p:PublishSingleFile=true')
+    'sc-comp'     = @('--self-contained', 'true', '-p:PublishSingleFile=true', '-p:EnableCompressionInSingleFile=true')
     'sc-r2r'      = @('--self-contained', 'true', '-p:PublishSingleFile=true', '-p:PublishReadyToRun=true')
     'sc-r2r-comp' = @('--self-contained', 'true', '-p:PublishSingleFile=true', '-p:PublishReadyToRun=true', '-p:EnableCompressionInSingleFile=true')
 }
