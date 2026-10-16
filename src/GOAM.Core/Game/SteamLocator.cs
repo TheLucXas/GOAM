@@ -10,6 +10,9 @@ public interface ISteamLocator
 
     /// <summary>Path of goam_relay_key.cfg inside the most recently used Steam account folder, or null.</summary>
     string? FindRelayCfgPath();
+
+    /// <summary>The CS:GO install folder (contains csgo.exe) found in any Steam library, or null.</summary>
+    string? FindCsgoDir();
 }
 
 public sealed class SteamLocator : ISteamLocator
@@ -43,6 +46,54 @@ public sealed class SteamLocator : ISteamLocator
             : Path.Combine(user, CsgoAppId, "local", "cfg", "goam_relay_key.cfg");
     }
 
+    public string? FindCsgoDir()
+    {
+        string? root = FindSteamRoot();
+        if (root is null)
+        {
+            return null;
+        }
+
+        var libraries = new List<string> { root };
+        try
+        {
+            string vdf = Path.Combine(root, "steamapps", "libraryfolders.vdf");
+            if (File.Exists(vdf))
+            {
+                libraries.AddRange(ParseLibraryFolders(File.ReadAllText(vdf)));
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // fall back to the main library only
+        }
+
+        foreach (string lib in libraries)
+        {
+            string candidate = Path.Combine(lib, "steamapps", "common", "Counter-Strike Global Offensive");
+            if (File.Exists(Path.Combine(candidate, "csgo.exe")))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Extracts every <c>"path"  "..."</c> value from Steam's libraryfolders.vdf.</summary>
+    internal static IEnumerable<string> ParseLibraryFolders(string vdf)
+    {
+        foreach (System.Text.RegularExpressions.Match m in
+                 System.Text.RegularExpressions.Regex.Matches(vdf, "\"path\"\\s+\"([^\"]+)\""))
+        {
+            string path = m.Groups[1].Value.Replace("\\\\", "\\");
+            if (path.Length > 0)
+            {
+                yield return path;
+            }
+        }
+    }
+
     /// <summary>Most-recently-modified userdata\&lt;id&gt; folder that contains the CS:GO app folder.</summary>
     internal static string? FindUserFolder(string userdataDir)
     {
@@ -66,8 +117,18 @@ public sealed class SteamLocator : ISteamLocator
         }
     }
 
+    /// <summary>Environment variable that forces the Steam folder (tests and sandboxed runs).</summary>
+    public const string SteamDirVariable = "GOAM_STEAM_DIR";
+
     private static string? FindSteamRoot()
     {
+        string? forced = Environment.GetEnvironmentVariable(SteamDirVariable);
+        if (!string.IsNullOrWhiteSpace(forced))
+        {
+            string full = Path.GetFullPath(forced.Trim().Trim('"'));
+            return Directory.Exists(full) ? full : null;
+        }
+
         string?[] candidates =
         {
             ReadRegistry(RegistryHive.LocalMachine, @"SOFTWARE\WOW6432Node\Valve\Steam", "InstallPath"),

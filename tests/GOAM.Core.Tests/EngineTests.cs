@@ -15,6 +15,7 @@ public class EngineTests : IDisposable
         public string? RelayPath { get; set; }
         public string? FindSteamExe() => null;
         public string? FindRelayCfgPath() => RelayPath;
+        public string? FindCsgoDir() => null;
     }
 
     private readonly TempDir _dir = new();

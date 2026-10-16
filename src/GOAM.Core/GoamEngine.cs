@@ -203,12 +203,16 @@ public sealed class GoamEngine : IDisposable
         RaiseStateChanged();
     }
 
-    /// <summary>Re-applies the current volume to voice_input.wav for the active song.</summary>
+    /// <summary>
+    /// Re-applies the current volume to an existing voice_input.wav (the slider was moved while a song
+    /// is active). Does nothing if no song has been written yet.
+    /// </summary>
     public void ReapplyVolume()
     {
         lock (_gate)
         {
-            if (_running && _selected >= 1 && _selected <= _songs.Count)
+            if (_running && _files is not null && File.Exists(_files.VoiceInputWav)
+                && _selected >= 1 && _selected <= _songs.Count)
             {
                 WriteVoice_NoLock(_songs[_selected - 1]);
             }
