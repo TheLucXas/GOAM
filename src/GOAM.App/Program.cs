@@ -44,18 +44,25 @@ internal static class Program
 
         // "--screenshot <file.png>": save a picture of the main window once it is ready, then exit.
         // Used to produce the README images and to check the UI in automated runs.
-        string? screenshot = null;
-        int flag = Array.FindIndex(args, a => string.Equals(a, "--screenshot", StringComparison.OrdinalIgnoreCase));
-        if (flag >= 0 && flag + 1 < args.Length)
-        {
-            screenshot = Path.GetFullPath(args[flag + 1]);
-        }
+        string? screenshot = ArgAfter(args, "--screenshot");
 
-        using var form = new MainForm(services, showEvent, screenshot);
+        // "--benchmark <out.json> [--bench-mp3 <file>]": measure list refresh and conversion, then exit.
+        // Reproduces the numbers in docs/PERFORMANCE.md.
+        string? benchmark = ArgAfter(args, "--benchmark");
+        string? benchMp3 = ArgAfter(args, "--bench-mp3");
+
+        using var form = new MainForm(services, showEvent, screenshot, benchmark, benchMp3);
         Application.Run(form);
 
         showEvent.Dispose();
         return 0;
+    }
+
+    /// <summary>The value following <paramref name="name"/> on the command line, as a full path, or null.</summary>
+    private static string? ArgAfter(string[] args, string name)
+    {
+        int i = Array.FindIndex(args, a => string.Equals(a, name, StringComparison.OrdinalIgnoreCase));
+        return i >= 0 && i + 1 < args.Length ? Path.GetFullPath(args[i + 1]) : null;
     }
 
     private static void ReportCrash(AppServices services, Exception ex)

@@ -88,6 +88,22 @@ public class AudioConversionTests
     }
 
     [MediaFoundationFact]
+    public void Mp3StereoDownmixKeepsBothChannels()
+    {
+        // Same property as the OGG test, through the native Media Foundation path.
+        using var dir = new TempDir();
+        WavInfo wav = ConvertAsset(Assets.Mp3, dir);
+
+        double p440 = PowerAt(wav, 440);
+        double p660 = PowerAt(wav, 660);
+        double off = Math.Max(PowerAt(wav, 550), PowerAt(wav, 1000));
+
+        Assert.True(p440 > off * 20, $"440 Hz missing (p440={p440}, off={off})");
+        Assert.True(p660 > off * 20, $"660 Hz missing (p660={p660}, off={off})");
+        Assert.InRange(p440 / p660, 0.5, 2.0);
+    }
+
+    [MediaFoundationFact]
     public void ResamplingFrom48kKeepsTheTonePitch()
     {
         using var dir = new TempDir();

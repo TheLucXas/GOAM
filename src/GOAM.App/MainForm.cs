@@ -66,6 +66,8 @@ internal sealed class MainForm : Form
     private readonly Button _btnReport;
 
     private readonly string? _screenshotPath;
+    private readonly string? _benchmarkPath;
+    private readonly string? _benchmarkMp3;
     private readonly System.Windows.Forms.Timer _volumeTimer = new() { Interval = 350 };
     private readonly System.Windows.Forms.Timer _statusTimer = new() { Interval = 2800 };
 
@@ -80,13 +82,20 @@ internal sealed class MainForm : Form
     private Icon? _icon;
     private RegisteredWaitHandle? _showWait;
 
-    public MainForm(AppServices services, EventWaitHandle showEvent, string? screenshotPath = null)
+    public MainForm(
+        AppServices services,
+        EventWaitHandle showEvent,
+        string? screenshotPath = null,
+        string? benchmarkPath = null,
+        string? benchmarkMp3 = null)
     {
         _s = services;
         _t = services.Localizer;
         _engine = services.Engine;
         _showEvent = showEvent;
         _screenshotPath = screenshotPath;
+        _benchmarkPath = benchmarkPath;
+        _benchmarkMp3 = benchmarkMp3;
 
         _btnLang = Theme.Button("EN", Theme.Window, 60, 36, 9.5f);
         _btnLang.FlatAppearance.BorderSize = 1;
@@ -417,12 +426,88 @@ internal sealed class MainForm : Form
                 SaveScreenshot(_screenshotPath);
                 Close();
             }
+            else if (_benchmarkPath is not null)
+            {
+                await Task.Delay(600);
+                await RunBenchmarkAsync(_benchmarkPath, _benchmarkMp3);
+                Close();
+            }
         }
         catch (Exception ex)
         {
             _s.Log.Error("Start-up failed", ex);
             MessageBox.Show(this, ex.Message, _t["err_critical"], MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+    }
+
+    /// <summary>
+    /// Self-measurement used for docs/PERFORMANCE.md: how long the song list takes to build from empty and to
+    /// refresh after a selection change (including paint), and how long a 5-minute MP3 takes to convert.
+    /// </summary>
+    private async Task RunBenchmarkAsync(string outputPath, string? mp3Path)
+    {
+        static double Median(List<double> values)
+        {
+            var sorted = values.OrderBy(v => v).ToList();
+            return sorted[sorted.Count / 2];
+        }
+
+        var result = new Dictionary<string, object?> { ["songs"] = _engine.Songs.Count };
+        int n = Math.Max(1, _engine.Songs.Count);
+
+        // cold build: empty grid -> N rows, painted
+        _grid.RowCount = 0;
+        _grid.Refresh();
+        var sw = Stopwatch.StartNew();
+        RefreshUi();
+        _grid.Refresh();
+        result["list_cold_build_ms"] = Math.Round(sw.Elapsed.TotalMilliseconds, 1);
+
+        // refresh after a selection change (the engine call itself is not part of the UI time)
+        var times = new List<double>();
+        for (int k = 1; k <= 8; k++)
+        {
+            int index = (k * 7) % n + 1;
+            await Task.Run(() => _engine.SelectSong(index));
+            await Task.Delay(30);
+            sw.Restart();
+            RefreshUi();
+            _grid.Refresh();
+            times.Add(sw.Elapsed.TotalMilliseconds);
+        }
+
+        result["list_refresh_ms_median"] = Math.Round(Median(times), 1);
+        result["list_refresh_ms_max"] = Math.Round(times.Max(), 1);
+
+        if (mp3Path is not null && File.Exists(mp3Path))
+        {
+            string outWav = Path.Combine(_s.Paths.DataDir, "bench-convert.wav");
+            var conv = new List<double>();
+            for (int i = 0; i < 3; i++)
+            {
+                double ms = await Task.Run(() =>
+                {
+                    var t0 = Stopwatch.StartNew();
+                    _s.Converter.ConvertToCsgoWav(mp3Path, outWav);
+                    return t0.Elapsed.TotalMilliseconds;
+                });
+                conv.Add(ms);
+            }
+
+            File.Delete(outWav);
+            result["convert_5min_mp3_ms_median"] = Math.Round(Median(conv), 1);
+            result["convert_5min_mp3_ms_first"] = Math.Round(conv[0], 1);
+        }
+
+        using var self = Process.GetCurrentProcess();
+        result["working_set_mb"] = Math.Round(self.WorkingSet64 / 1048576.0, 1);
+        result["private_mb"] = Math.Round(self.PrivateMemorySize64 / 1048576.0, 1);
+
+        Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
+        File.WriteAllText(
+            outputPath,
+            System.Text.Json.JsonSerializer.Serialize(
+                result, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
     }
 
     private void SaveScreenshot(string path)
