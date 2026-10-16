@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <AssemblyName>GOAM.Core</AssemblyName>
+    <RootNamespace>Goam.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NAudio.Core" />
+    <PackageReference Include="NAudio.Wasapi" />
+    <PackageReference Include="NAudio.WinMM" />
+    <PackageReference Include="NVorbis" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="GOAM.Core.Tests" />
+  </ItemGroup>
+
+</Project>
