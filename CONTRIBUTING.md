@@ -36,6 +36,7 @@ With `GOAM_DATA_DIR` set, "Start with Windows" writes a text file instead of the
 | `src/GOAM.Core` | Everything that is not UI: audio, config, relay, cfg generation, yt-dlp, i18n |
 | `src/GOAM.App` | Windows Forms UI, tray, single instance |
 | `tests/GOAM.Core.Tests` | xUnit tests (`tests/assets` holds tiny synthetic tone files) |
+| `tests/ui` | PowerShell + UI Automation smoke tests that drive the real window (manual, see its README) |
 | `docs/` | Architecture, feature parity with 1.x, performance measurements |
 | `tools/bench` | Scripts used to produce `docs/PERFORMANCE.md` |
 
@@ -45,7 +46,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before making structural change
 
 1. Branch from `develop`.
 2. Keep changes focused; small commits with a message that says *what* and *why*.
-3. Add or update tests for behaviour changes in `GOAM.Core`.
+3. Add or update tests for behaviour changes in `GOAM.Core`; for UI changes run the scripts in `tests/ui`.
 4. `dotnet build` must be warning-free (CI treats warnings as errors) and `dotnet test` must pass.
 5. Update `CHANGELOG.md` under **Unreleased** for anything a user would notice.
 6. Do not bump the version in a feature PR; releases are cut by the maintainer (`Directory.Build.props`).

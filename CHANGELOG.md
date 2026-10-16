@@ -21,7 +21,8 @@ Complete rewrite in C# / .NET 8. The last Python release stays available at the
 - Rotating local log file; no telemetry.
 - Automatic detection of the CS:GO install in Steam libraries.
 - `GOAM_DATA_DIR`, `GOAM_TOOLS_DIR` (and `GOAM_STEAM_DIR`) environment variables for portable use and tests.
-- Unit-test suite, GitHub Actions CI and tagged-release workflow, Dependabot.
+- Unit-test suite (200+ tests), UI Automation smoke tests, GitHub Actions CI and tagged-release workflow,
+  Dependabot.
 - Settings are migrated automatically from the 1.x `config` file.
 
 ### Changed
